@@ -16,6 +16,7 @@ const createDefaultQuote = () => ({
   flightPrice: 0,
   images: [],
   flightImage: null,
+  notas: [],
   paymentMethods: {
     cash: false,
     debitCard: { enabled: false, months: 0 },

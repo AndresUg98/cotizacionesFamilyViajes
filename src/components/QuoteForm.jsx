@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { useQuotes } from '../context/QuoteContext';
 import ImageUploader from './ImageUploader';
 import PaymentMethods from './PaymentMethods';
@@ -212,6 +213,55 @@ export default function QuoteForm() {
           updatePaymentMethod(activeQuoteId, method, val)
         }
       />
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Notas Importantes
+        </label>
+        <div className="space-y-2">
+          {(activeQuote.notas || []).map((nota, idx) => (
+            <div key={nota.id} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={nota.text}
+                onChange={(e) => {
+                  const updated = [...activeQuote.notas];
+                  updated[idx] = { ...updated[idx], text: e.target.value };
+                  update('notas', updated);
+                }}
+                placeholder="Ej. No incluye traslados"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-300 transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const updated = activeQuote.notas.filter(
+                    (_, i) => i !== idx
+                  );
+                  update('notas', updated);
+                }}
+                className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() =>
+            update('notas', [
+              ...(activeQuote.notas || []),
+              { id: uuidv4(), text: '' },
+            ])
+          }
+          className="mt-2 w-full py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-sm text-gray-500 hover:text-violet-600 hover:border-violet-300 hover:bg-violet-50 transition-all"
+        >
+          + Añadir nota
+        </button>
+      </div>
     </div>
   );
 }

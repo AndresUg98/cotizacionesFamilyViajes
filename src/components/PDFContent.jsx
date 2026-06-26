@@ -41,6 +41,7 @@ export default function PDFContent({ quote, elementId, globalTitle }) {
     images = [],
     flightImage,
     paymentMethods,
+    notas = [],
   } = quote;
 
   const showHotel = tipoCotizacion !== 'solo-vuelo';
@@ -51,6 +52,20 @@ export default function PDFContent({ quote, elementId, globalTitle }) {
   const selectedMethods = Object.entries(paymentMethods).filter(
     ([, v]) => (typeof v === 'boolean' ? v : v.enabled)
   );
+
+  const galleryRows = (() => {
+    if (!showHotel || images.length === 0) return [];
+    const totalSlots = 6;
+    const slots = [];
+    for (let i = 0; i < totalSlots; i++) {
+      slots.push(i < images.length ? images[i] : null);
+    }
+    const rows = [];
+    for (let i = 0; i < totalSlots; i += 3) {
+      rows.push(slots.slice(i, i + 3));
+    }
+    return rows;
+  })();
 
   const formatMonths = (val) => {
     if (!val || val.months === undefined) return '';
@@ -64,6 +79,8 @@ export default function PDFContent({ quote, elementId, globalTitle }) {
       style={{
         width: '794px',
         padding: '40px 48px',
+        boxSizing: 'border-box',
+        position: 'relative',
         fontFamily: 'Inter, system-ui, sans-serif',
         color: '#1f2937',
         background: '#ffffff',
@@ -117,6 +134,8 @@ export default function PDFContent({ quote, elementId, globalTitle }) {
             borderRadius: '12px',
             padding: '20px 24px',
             marginBottom: '16px',
+            pageBreakInside: 'avoid',
+            breakInside: 'avoid',
           }}
         >
           <h2
@@ -172,6 +191,8 @@ export default function PDFContent({ quote, elementId, globalTitle }) {
           borderRadius: '12px',
           padding: '20px 24px',
           marginBottom: '16px',
+          pageBreakInside: 'avoid',
+          breakInside: 'avoid',
         }}
       >
         <h2
@@ -198,6 +219,8 @@ export default function PDFContent({ quote, elementId, globalTitle }) {
           borderRadius: '12px',
           padding: '20px 24px',
           marginBottom: '16px',
+          pageBreakInside: 'avoid',
+          breakInside: 'avoid',
         }}
       >
         <h2
@@ -334,50 +357,58 @@ export default function PDFContent({ quote, elementId, globalTitle }) {
           >
             Galería
           </h2>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '6px',
-              pageBreakInside: 'avoid',
-              breakInside: 'avoid',
-            }}
-          >
-            {images.map((img) => (
-              <div
-                key={img.id}
-                style={{
-                  borderRadius: '6px',
-                  overflow: 'hidden',
-                  background: '#f3f4f6',
-                  height: '180px',
-                }}
-              >
-                <img
-                  src={img.url}
-                  alt="Hotel"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    display: 'block',
-                  }}
-                />
-              </div>
-            ))}
-            {images.length < 6 &&
-              Array.from({ length: 6 - images.length }).map((_, i) => (
-                <div
-                  key={`empty-${i}`}
-                  style={{
-                    borderRadius: '6px',
-                    background: '#f9fafb',
-                    border: '1px dashed #e5e7eb',
-                    height: '180px',
-                  }}
-                />
-              ))}
-          </div>
+          {galleryRows.map((row, rowIdx) => (
+            <div
+              key={rowIdx}
+              style={{
+                display: 'flex',
+                gap: '6px',
+                pageBreakInside: 'avoid',
+                breakInside: 'avoid',
+                marginBottom: rowIdx < galleryRows.length - 1 ? '6px' : '0',
+              }}
+            >
+              {row.map((slot, slotIdx) => {
+                if (slot) {
+                  return (
+                    <div
+                      key={slot.id}
+                      style={{
+                        width: '32%',
+                        borderRadius: '6px',
+                        overflow: 'hidden',
+                        background: '#f3f4f6',
+                        height: '180px',
+                      }}
+                    >
+                      <img
+                        src={slot.url}
+                        alt="Hotel"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block',
+                        }}
+                      />
+                    </div>
+                  );
+                }
+                return (
+                  <div
+                    key={`empty-${rowIdx}-${slotIdx}`}
+                    style={{
+                      width: '32%',
+                      borderRadius: '6px',
+                      background: '#f9fafb',
+                      border: '1px dashed #e5e7eb',
+                      height: '180px',
+                    }}
+                  />
+                );
+              })}
+            </div>
+          ))}
         </div>
       )}
 
@@ -388,6 +419,8 @@ export default function PDFContent({ quote, elementId, globalTitle }) {
             borderRadius: '12px',
             padding: '20px 24px',
             marginBottom: '16px',
+            pageBreakInside: 'avoid',
+            breakInside: 'avoid',
           }}
         >
           <h2
@@ -421,6 +454,37 @@ export default function PDFContent({ quote, elementId, globalTitle }) {
               </span>
             </div>
           ))}
+        </div>
+      )}
+
+      {notas.length > 0 && (
+        <div
+          style={{
+            background: '#f9fafb',
+            borderRadius: '12px',
+            padding: '20px 24px',
+            marginBottom: '16px',
+            pageBreakInside: 'avoid',
+            breakInside: 'avoid',
+          }}
+        >
+          <h2
+            style={{
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#7c3aed',
+              margin: '0 0 12px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
+            Notas Importantes
+          </h2>
+          <ul style={{ margin: '0', paddingLeft: '18px', fontSize: '12px', color: '#374151', lineHeight: '1.6' }}>
+            {notas.map((nota) => (
+              <li key={nota.id}>{nota.text}</li>
+            ))}
+          </ul>
         </div>
       )}
 

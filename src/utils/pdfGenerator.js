@@ -18,7 +18,10 @@ function waitForImages(element) {
 function getGalleryCanvasTop(element, canvasHeight) {
   const el = element.querySelector('[data-pdf-gallery]');
   if (!el) return Infinity;
-  return el.offsetTop * (canvasHeight / element.scrollHeight);
+  const elementRect = element.getBoundingClientRect();
+  const galleryRect = el.getBoundingClientRect();
+  const relativeTop = galleryRect.top - elementRect.top + element.scrollTop;
+  return relativeTop * (canvasHeight / element.scrollHeight);
 }
 
 function captureToCanvas(element) {
