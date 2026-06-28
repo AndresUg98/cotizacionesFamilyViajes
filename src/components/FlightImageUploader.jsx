@@ -127,11 +127,11 @@ export default function FlightImageUploader({ image, onChange }) {
       )}
 
       {image && (
-        <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+        <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50/50 flex items-center justify-center max-h-[200px]">
           <img
             src={image.url}
             alt="Vuelo"
-            className="w-full h-48 object-cover"
+            className="w-full h-auto max-h-[200px] object-contain"
           />
           <button
             type="button"

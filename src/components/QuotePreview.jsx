@@ -159,11 +159,11 @@ export default function QuotePreview() {
             <h3 className="text-xs font-semibold text-cyan-600 uppercase tracking-wider mb-3">
               Imagen del Vuelo
             </h3>
-            <div className="rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+            <div className="rounded-xl overflow-hidden bg-gray-50/50 border border-gray-200 flex items-center justify-center max-h-[200px]">
               <img
                 src={flightImage.url}
                 alt="Vuelo"
-                className="w-full h-48 object-cover"
+                className="w-full h-auto max-h-[200px] object-contain"
               />
             </div>
           </div>
