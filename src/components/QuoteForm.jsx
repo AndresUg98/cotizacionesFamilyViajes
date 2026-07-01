@@ -145,11 +145,60 @@ export default function QuoteForm() {
               type="number"
               min="0"
               value={activeQuote.menores}
-              onChange={(e) => update('menores', Math.max(0, Number(e.target.value)))}
+              onChange={(e) => {
+                const newCount = Math.max(0, Number(e.target.value));
+                const ages = [...(activeQuote.menoresAges || [])];
+                if (newCount > ages.length) {
+                  while (ages.length < newCount) ages.push('');
+                } else {
+                  ages.length = newCount;
+                }
+                update('menores', newCount);
+                update('menoresAges', ages);
+              }}
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-300 transition-all"
             />
           </div>
         </div>
+        {activeQuote.menores > 0 && (
+          <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+            <label className="block text-xs font-medium text-gray-500 mb-2">
+              Edades de los menores
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {Array.from({ length: activeQuote.menores }, (_, idx) => (
+                <div key={idx} className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-gray-400 font-medium min-w-[36px] text-right">
+                    #{idx + 1}
+                  </span>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={activeQuote.menoresAges[idx] || ''}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v === '' || /^(1[0-7]|[1-9])$/.test(v)) {
+                          const ages = [...(activeQuote.menoresAges || [])];
+                          ages[idx] = v;
+                          update('menoresAges', ages);
+                        }
+                      }}
+                      placeholder="Edad"
+                      list={`age-list-${idx}`}
+                      className="w-20 px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-800 placeholder-gray-400 text-center focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-300 transition-all"
+                    />
+                    <datalist id={`age-list-${idx}`}>
+                      {Array.from({ length: 17 }, (_, i) => (
+                        <option key={i + 1} value={i + 1} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

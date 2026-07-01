@@ -41,6 +41,7 @@ export default function QuotePreview() {
     roomType,
     adultos = 1,
     menores = 0,
+    menoresAges = [],
     hotelPrice = 0,
     flightPrice = 0,
     transportPrice = 0,
@@ -63,6 +64,15 @@ export default function QuotePreview() {
     if (!val || val.months === undefined) return '';
     if (val.months === 0) return '— Pago único';
     return `— ${val.months} meses sin intereses`;
+  };
+
+  const formatAges = (ages) => {
+    const labels = ages
+      .filter((a) => a !== '' && a !== undefined && a !== null)
+      .map((a) => `${a} ${Number(a) === 1 ? 'año' : 'años'}`);
+    if (labels.length === 0) return '';
+    if (labels.length === 1) return ` (${labels[0]})`;
+    return ` (${labels.slice(0, -1).join(', ')} y ${labels[labels.length - 1]})`;
   };
 
   const { ida, regreso, baggage, departureDate, returnDate } = flightDetails || {};
@@ -196,7 +206,11 @@ export default function QuotePreview() {
           </h3>
           <p className="text-sm text-gray-700">
             {adultos} {adultos === 1 ? 'adulto' : 'adultos'}
-            {menores > 0 && ` y ${menores} ${menores === 1 ? 'menor' : 'menores'}`}
+            {menores > 0 && (
+              <> y {menores} {menores === 1 ? 'menor' : 'menores'}
+                {formatAges(menoresAges)}
+              </>
+            )}
           </p>
         </div>
 

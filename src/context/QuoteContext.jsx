@@ -3,6 +3,16 @@ import { v4 as uuidv4 } from 'uuid';
 
 const QuoteContext = createContext(null);
 
+const FLIGHT_KEYS = ['flightDetails', 'flightPrice', 'transportPrice', 'flightImage', 'tipoCotizacion', 'adultos', 'menores', 'menoresAges'];
+
+const deepCloneFlightDetails = (fd) => ({
+  departureDate: fd.departureDate,
+  returnDate: fd.returnDate,
+  ida: { ...fd.ida },
+  regreso: { ...fd.regreso },
+  baggage: { ...fd.baggage },
+});
+
 const createDefaultQuote = () => ({
   id: uuidv4(),
   tipoCotizacion: 'hotel+vuelo',
@@ -12,6 +22,7 @@ const createDefaultQuote = () => ({
   roomType: '',
   adultos: 1,
   menores: 0,
+  menoresAges: [],
   hotelPrice: 0,
   flightPrice: 0,
   transportPrice: 0,
@@ -58,9 +69,29 @@ export function QuoteProvider({ children }) {
   );
 
   const updateQuote = useCallback((id, updates) => {
-    setQuotes((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, ...updates } : q))
-    );
+    setQuotes((prev) => {
+      const hasFlightUpdates = FLIGHT_KEYS.some((key) => key in updates);
+      if (!hasFlightUpdates) {
+        return prev.map((q) => (q.id === id ? { ...q, ...updates } : q));
+      }
+      return prev.map((q) => {
+        let merged = { ...q };
+        for (const key of Object.keys(updates)) {
+          if (FLIGHT_KEYS.includes(key)) {
+            if (key === 'flightDetails') {
+              merged.flightDetails = deepCloneFlightDetails(updates.flightDetails);
+            } else if (key === 'flightImage') {
+              merged.flightImage = updates.flightImage ? { ...updates.flightImage } : null;
+            } else {
+              merged[key] = updates[key];
+            }
+          } else if (q.id === id) {
+            merged[key] = updates[key];
+          }
+        }
+        return merged;
+      });
+    });
   }, []);
 
   const updatePaymentMethod = useCallback((id, method, value) => {
@@ -74,10 +105,21 @@ export function QuoteProvider({ children }) {
   }, []);
 
   const addQuote = useCallback(() => {
-    const newQuote = createDefaultQuote();
-    setQuotes((prev) => [...prev, newQuote]);
-    setActiveQuoteId(newQuote.id);
-  }, []);
+    setQuotes((prev) => {
+      const source = prev.find((q) => q.id === activeQuoteId) || prev[0];
+      const newQuote = createDefaultQuote();
+      newQuote.flightDetails = deepCloneFlightDetails(source.flightDetails);
+      newQuote.flightPrice = source.flightPrice;
+      newQuote.transportPrice = source.transportPrice;
+      newQuote.flightImage = source.flightImage ? { ...source.flightImage } : null;
+      newQuote.tipoCotizacion = source.tipoCotizacion;
+      newQuote.adultos = source.adultos;
+      newQuote.menores = source.menores;
+      newQuote.menoresAges = [...source.menoresAges];
+      setActiveQuoteId(newQuote.id);
+      return [...prev, newQuote];
+    });
+  }, [activeQuoteId]);
 
   const removeQuote = useCallback((id) => {
     setQuotes((prev) => prev.filter((q) => q.id !== id));
