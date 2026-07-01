@@ -14,6 +14,7 @@ const createDefaultQuote = () => ({
   menores: 0,
   hotelPrice: 0,
   flightPrice: 0,
+  transportPrice: 0,
   images: [],
   flightImage: null,
   notas: [],
@@ -23,6 +24,13 @@ const createDefaultQuote = () => ({
     creditCard: { enabled: false, months: 6 },
     twoCards: { enabled: false, months: 6 },
     deferred: { enabled: false, months: 6 },
+  },
+  flightDetails: {
+    departureDate: '',
+    returnDate: '',
+    ida: { origin: '', destination: '', departureTime: '', arrivalTime: '', flightType: 'directo' },
+    regreso: { origin: '', destination: '', departureTime: '', arrivalTime: '', flightType: 'directo' },
+    baggage: { personal: false, carryOn: false, checked: false },
   },
 });
 

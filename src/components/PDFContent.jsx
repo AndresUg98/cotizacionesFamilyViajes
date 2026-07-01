@@ -1,18 +1,5 @@
 import logo from '../assets/logoFamily.png';
 
-function formatDate(dateStr) {
-  if (!dateStr) return '—';
-  try {
-    return new Date(dateStr + 'T12:00:00').toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  } catch {
-    return dateStr;
-  }
-}
-
 const tipoLabel = {
   'hotel+vuelo': 'Hotel + Vuelo',
   'solo-hotel': 'Solo Hotel',
@@ -31,13 +18,12 @@ export default function PDFContent({ quote, elementId, globalTitle }) {
   const {
     tipoCotizacion = 'hotel+vuelo',
     hotelName,
-    checkIn,
-    checkOut,
     roomType,
     adultos = 1,
     menores = 0,
     hotelPrice = 0,
     flightPrice = 0,
+    transportPrice = 0,
     images = [],
     flightImage,
     paymentMethods,
@@ -47,7 +33,7 @@ export default function PDFContent({ quote, elementId, globalTitle }) {
   const showHotel = tipoCotizacion !== 'solo-vuelo';
   const showFlight = tipoCotizacion !== 'solo-hotel';
   const total =
-    (showHotel ? hotelPrice : 0) + (showFlight ? flightPrice : 0);
+    (showHotel ? hotelPrice : 0) + (showFlight ? flightPrice : 0) + transportPrice;
 
   const selectedMethods = Object.entries(paymentMethods).filter(
     ([, v]) => (typeof v === 'boolean' ? v : v.enabled)
@@ -71,6 +57,36 @@ export default function PDFContent({ quote, elementId, globalTitle }) {
     if (!val || val.months === undefined) return '';
     if (val.months === 0) return '— Pago único';
     return `— ${val.months} meses sin intereses`;
+  };
+
+  const { ida, regreso, baggage, departureDate, returnDate } = quote.flightDetails || {};
+  const hasFlightRoute = ida?.origin && ida?.destination;
+  const activeBaggage = Object.entries(baggage || {}).filter(([, v]) => v).map(([k]) => k);
+  const baggageLabels = { personal: 'Artículo Personal', carryOn: 'Equipaje de Mano', checked: 'Equipaje Documentado' };
+
+  const tripDuration = (() => {
+    if (!departureDate || !returnDate) return null;
+    const dep = new Date(departureDate + 'T12:00:00');
+    const ret = new Date(returnDate + 'T12:00:00');
+    if (isNaN(dep) || isNaN(ret)) return null;
+    const nights = Math.round((ret - dep) / (1000 * 60 * 60 * 24));
+    const days = nights + 1;
+    if (nights < 0) return null;
+    const depDay = dep.getDate();
+    const retDay = ret.getDate();
+    const monthName = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(dep);
+    const monthCap = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+    return { text: `del ${depDay} al ${retDay} de ${monthCap} (${days} días y ${nights} noches)`, days, nights };
+  })();
+  const airportName = (code) => {
+    const airports = {
+      CUU: 'Chihuahua', CUN: 'Cancún', MEX: 'Ciudad de México',
+      GDL: 'Guadalajara', MTY: 'Monterrey', TIJ: 'Tijuana',
+      HMO: 'Hermosillo', SLP: 'San Luis Potosí', BJX: 'León/Guanajuato',
+      PVR: 'Puerto Vallarta', SJD: 'Los Cabos', MID: 'Mérida',
+      VER: 'Veracruz', ACA: 'Acapulco', OAX: 'Oaxaca',
+    };
+    return airports[code] || code;
   };
 
   return (
@@ -119,13 +135,158 @@ export default function PDFContent({ quote, elementId, globalTitle }) {
           style={{
             fontSize: '14px',
             color: '#6b7280',
-            margin: '0 0 24px',
+            margin: '0 0 4px',
           }}
         >
           {globalTitle}
         </p>
       )}
-      {!globalTitle && <div style={{ height: '38px' }} />}
+      {!globalTitle && <div style={{ height: '4px' }} />}
+      {tripDuration && (
+        <p
+          style={{
+            fontSize: '15px',
+            fontWeight: '600',
+            color: '#7c3aed',
+            margin: '0 0 24px',
+          }}
+        >
+          {tripDuration.text}
+        </p>
+      )}
+      {!tripDuration && <div style={{ height: '24px' }} />}
+
+      {showFlight && hasFlightRoute && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #f5f3ff, #ecfeff)',
+            borderRadius: '16px',
+            padding: '24px 28px',
+            marginBottom: '20px',
+            border: '1px solid #e0e7ff',
+            pageBreakInside: 'avoid',
+            breakInside: 'avoid',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <span style={{ fontSize: '16px', fontWeight: '700', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Tarjeta de Abordaje
+            </span>
+            <div style={{ flex: 1, height: '2px', background: 'linear-gradient(90deg, #7c3aed, #22d3ee)' }} />
+          </div>
+
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+            <div style={{ flex: 1, background: '#ffffff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e0e7ff' }}>
+              <div style={{ fontSize: '10px', fontWeight: '600', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                Ida — {airportName(ida.origin)} a {airportName(ida.destination)}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '22px', fontWeight: '800', fontFamily: 'monospace', color: '#5b21b6', letterSpacing: '0.02em' }}>
+                  {ida.origin}
+                </span>
+                <span style={{ fontSize: '14px', color: '#9ca3af' }}>→</span>
+                <span style={{ fontSize: '22px', fontWeight: '800', fontFamily: 'monospace', color: '#5b21b6', letterSpacing: '0.02em' }}>
+                  {ida.destination}
+                </span>
+              </div>
+              <div style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.6' }}>
+                {departureDate && (
+                  <div style={{ marginBottom: '2px' }}>
+                    <span style={{ fontWeight: '600', color: '#374151' }}>Fecha:</span>{' '}
+                    {new Date(departureDate + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </div>
+                )}
+                <div>
+                  <span style={{ fontWeight: '600', color: '#374151' }}>Salida:</span>{' '}
+                  {ida.departureTime || '—'} <span style={{ color: '#9ca3af' }}>|</span>{' '}
+                  <span style={{ fontWeight: '600', color: '#374151' }}>Llegada:</span>{' '}
+                  {ida.arrivalTime || '—'}
+                </div>
+                <div style={{ marginTop: '6px' }}>
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '2px 10px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    background: ida.flightType === 'directo' ? '#d1fae5' : '#fef3c7',
+                    color: ida.flightType === 'directo' ? '#065f46' : '#92400e',
+                  }}>
+                    • {ida.flightType === 'directo' ? 'Vuelo Directo' : 'Vuelo con Escalas'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, background: '#ffffff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #cffafe' }}>
+              <div style={{ fontSize: '10px', fontWeight: '600', color: '#0891b2', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                Regreso — {airportName(regreso.origin || ida.destination)} a {airportName(regreso.destination || ida.origin)}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '22px', fontWeight: '800', fontFamily: 'monospace', color: '#0e7490', letterSpacing: '0.02em' }}>
+                  {regreso.origin || ida.destination}
+                </span>
+                <span style={{ fontSize: '14px', color: '#9ca3af' }}>→</span>
+                <span style={{ fontSize: '22px', fontWeight: '800', fontFamily: 'monospace', color: '#0e7490', letterSpacing: '0.02em' }}>
+                  {regreso.destination || ida.origin}
+                </span>
+              </div>
+              <div style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.6' }}>
+                {returnDate && (
+                  <div style={{ marginBottom: '2px' }}>
+                    <span style={{ fontWeight: '600', color: '#374151' }}>Fecha:</span>{' '}
+                    {new Date(returnDate + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </div>
+                )}
+                <div>
+                  <span style={{ fontWeight: '600', color: '#374151' }}>Salida:</span>{' '}
+                  {regreso.departureTime || '—'} <span style={{ color: '#9ca3af' }}>|</span>{' '}
+                  <span style={{ fontWeight: '600', color: '#374151' }}>Llegada:</span>{' '}
+                  {regreso.arrivalTime || '—'}
+                </div>
+                {regreso.flightType && (
+                  <div style={{ marginTop: '6px' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '2px 10px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      background: regreso.flightType === 'directo' ? '#d1fae5' : '#fef3c7',
+                      color: regreso.flightType === 'directo' ? '#065f46' : '#92400e',
+                    }}>
+                      • {regreso.flightType === 'directo' ? 'Vuelo Directo' : 'Vuelo con Escalas'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {activeBaggage.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '10px 16px', background: '#ffffff', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <span style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Equipaje:
+              </span>
+              {activeBaggage.map((key) => (
+                <span key={key} style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '2px 10px',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  background: '#ede9fe',
+                  color: '#5b21b6',
+                }}>
+                  {baggageLabels[key]}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {showHotel && (
         <div
@@ -166,20 +327,7 @@ export default function PDFContent({ quote, elementId, globalTitle }) {
                   </p>
                 </td>
               </tr>
-              <tr>
-                <td style={{ padding: '4px 0', verticalAlign: 'top' }}>
-                  <p style={{ fontSize: '11px', color: '#9ca3af', margin: '0 0 2px' }}>Check-in</p>
-                  <p style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937', margin: '0' }}>
-                    {formatDate(checkIn)}
-                  </p>
-                </td>
-                <td style={{ padding: '4px 0', verticalAlign: 'top' }}>
-                  <p style={{ fontSize: '11px', color: '#9ca3af', margin: '0 0 2px' }}>Check-out</p>
-                  <p style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937', margin: '0' }}>
-                    {formatDate(checkOut)}
-                  </p>
-                </td>
-              </tr>
+
             </tbody>
           </table>
         </div>

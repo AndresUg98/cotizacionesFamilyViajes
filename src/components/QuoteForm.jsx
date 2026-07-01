@@ -2,7 +2,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { useQuotes } from '../context/QuoteContext';
 import ImageUploader from './ImageUploader';
 import PaymentMethods from './PaymentMethods';
-import FlightImageUploader from './FlightImageUploader';
+import FlightSelector from './FlightSelector';
+import DatePicker from './DatePicker';
 
 const TIPOS = [
   { value: 'hotel+vuelo', label: 'Hotel + Vuelo' },
@@ -22,11 +23,11 @@ export default function QuoteForm() {
   const showFlight = tipo !== 'solo-hotel';
   const showRoomType = tipo !== 'solo-vuelo';
   const showHotelImages = tipo !== 'solo-vuelo';
-  const showFlightImage = tipo !== 'solo-hotel';
 
   const total =
     (showHotel ? activeQuote.hotelPrice || 0 : 0) +
-    (showFlight ? activeQuote.flightPrice || 0 : 0);
+    (showFlight ? activeQuote.flightPrice || 0 : 0) +
+    (activeQuote.transportPrice || 0);
 
   return (
     <div className="space-y-5">
@@ -66,6 +67,31 @@ export default function QuoteForm() {
         </div>
       </div>
 
+      {showFlight && (
+        <>
+          <DatePicker
+            departureDate={activeQuote.flightDetails.departureDate}
+            returnDate={activeQuote.flightDetails.returnDate}
+            onDepartureChange={(date) =>
+              update('flightDetails', {
+                ...activeQuote.flightDetails,
+                departureDate: date ? date.toISOString().split('T')[0] : '',
+              })
+            }
+            onReturnChange={(date) =>
+              update('flightDetails', {
+                ...activeQuote.flightDetails,
+                returnDate: date ? date.toISOString().split('T')[0] : '',
+              })
+            }
+          />
+          <FlightSelector
+            flightDetails={activeQuote.flightDetails}
+            onUpdate={(fd) => update('flightDetails', fd)}
+          />
+        </>
+      )}
+
       {showHotel && (
         <>
           <div>
@@ -79,31 +105,6 @@ export default function QuoteForm() {
               placeholder="Ej: Grand Beach Resort"
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-300 transition-all"
             />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Check-in
-              </label>
-              <input
-                type="date"
-                value={activeQuote.checkIn}
-                onChange={(e) => update('checkIn', e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-300 transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Check-out
-              </label>
-              <input
-                type="date"
-                value={activeQuote.checkOut}
-                onChange={(e) => update('checkOut', e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-300 transition-all"
-              />
-            </div>
           </div>
 
           {showRoomType && (
@@ -182,6 +183,19 @@ export default function QuoteForm() {
             />
           </div>
         )}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            Precio de Transportación (Oculto)
+          </label>
+          <input
+            type="number"
+            min="0"
+            value={activeQuote.transportPrice || ''}
+            onChange={(e) => update('transportPrice', Number(e.target.value))}
+            placeholder="0"
+            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-300 transition-all"
+          />
+        </div>
       </div>
 
       <div className="bg-gradient-to-r from-violet-50 to-cyan-50 rounded-xl p-4 border border-violet-100">
@@ -192,13 +206,6 @@ export default function QuoteForm() {
           </span>
         </div>
       </div>
-
-      {showFlightImage && (
-        <FlightImageUploader
-          image={activeQuote.flightImage}
-          onChange={(img) => update('flightImage', img)}
-        />
-      )}
 
       {showHotelImages && (
         <ImageUploader
